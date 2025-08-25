@@ -39,6 +39,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.net.toUri
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 
 val myFont = FontFamily(Font(R.font.cairo))
 
@@ -46,13 +50,21 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            Home()
+            val navController = rememberNavController()
+            NavHost(navController = navController, startDestination = "home") {
+                composable("home") {
+                    Home(navController)
+                }
+                composable("listening") {
+                    ListeningScreen()
+                }
+            }
         }
     }
 }
 
 @Composable
-fun Home() {
+fun Home(navController: NavController) {
     val context = LocalContext.current
 
     Box(
@@ -102,7 +114,9 @@ fun Home() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Button(
-                onClick = { /* Men Be3d */ },
+                onClick = {
+                    navController.navigate("listening")
+                },
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White.copy(alpha = 0.9f),
@@ -135,6 +149,7 @@ fun Home() {
                             val intent = Intent(Intent.ACTION_VIEW, "https://google.com".toUri())
                             context.startActivity(intent)
                         }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
                     )
 
                     Text(
@@ -153,6 +168,7 @@ fun Home() {
                             val intent = Intent(Intent.ACTION_VIEW, "https://google.com".toUri())
                             context.startActivity(intent)
                         }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
                     )
 
                     Text(
@@ -171,6 +187,7 @@ fun Home() {
                             val intent = Intent(Intent.ACTION_VIEW, "https://google.com".toUri())
                             context.startActivity(intent)
                         }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
             }
