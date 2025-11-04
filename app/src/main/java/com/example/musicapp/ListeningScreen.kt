@@ -39,6 +39,10 @@ import androidx.compose.ui.res.painterResource
 
 @Composable
 fun ListeningScreen() {
+    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+    var currentSongIndex by remember { mutableStateOf(-1) }
+    var isPlaying by remember { mutableStateOf(false) }
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -55,22 +59,35 @@ fun ListeningScreen() {
             Box(
                 modifier = Modifier.weight(0.8f)
             ) {
-                SongsList()
+                SongsList(
+                    mediaPlayer = mediaPlayer,
+                    onMediaPlayerChange = { newPlayer -> mediaPlayer = newPlayer; isPlaying = true },
+                    currentSongIndex = currentSongIndex,
+                    onSongSelected = { index -> currentSongIndex = index }
+                )
             }
 
             Box(
                 modifier = Modifier.weight(0.2f)
             ) {
-                MiniPlayer()
+                MiniPlayer(
+                    mediaPlayer = mediaPlayer,
+                    isPlaying = isPlaying,
+                    onPlayPause = { playing -> isPlaying = playing }
+                )
             }
         }
     }
 }
 
 @Composable
-fun SongsList() {
+fun SongsList(
+    mediaPlayer: MediaPlayer?,
+    onMediaPlayerChange: (MediaPlayer) -> Unit,
+    currentSongIndex: Int,
+    onSongSelected: (Int) -> Unit
+) {
     val context = LocalContext.current
-    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
 
     LazyColumn(
         modifier = Modifier
@@ -88,13 +105,25 @@ fun SongsList() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(10.dp))
-                    .background(Color.White.copy(alpha = 0.8f))
+                    .border(
+                        width = if (index == currentSongIndex) 2.dp else 0.dp,
+                        color = if (index == currentSongIndex) Color.Black else Color.Transparent,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    .background(
+                        if (index == currentSongIndex) Color.Gray.copy(alpha = 0.7f)
+                        else Color.White.copy(alpha = 0.8f)
+                    )
                     .padding(12.dp)
                     .clickable {
                         mediaPlayer?.stop()
                         mediaPlayer?.release()
-                        mediaPlayer = MediaPlayer.create(context, AppData.songsResId[index])
-                        mediaPlayer?.start()
+
+                        val player = MediaPlayer.create(context, AppData.songsResId[index])
+                        player.start()
+
+                        onMediaPlayerChange(player)
+                        onSongSelected(index)
                     }
             ) {
                 Text(
@@ -109,7 +138,11 @@ fun SongsList() {
 }
 
 @Composable
-fun MiniPlayer() {
+fun MiniPlayer(
+    mediaPlayer: MediaPlayer?,
+    isPlaying: Boolean,
+    onPlayPause: (Boolean) -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -146,10 +179,21 @@ fun MiniPlayer() {
                 )
 
                 Icon(
-                    painter = painterResource(id = R.drawable.play),
-                    contentDescription = "Play",
-                    modifier = Modifier.size(50.dp),
-                    tint = Color.Black
+                    painter = painterResource(id = if (isPlaying) R.drawable.pause else R.drawable.play),
+                    contentDescription = "Play/Pause",
+                    modifier = Modifier
+                        .size(50.dp)
+                        .clickable {
+                            mediaPlayer?.let { player ->
+                                if (player.isPlaying) {
+                                    player.pause()
+                                    onPlayPause(false)
+                                } else {
+                                    player.start()
+                                    onPlayPause(true)
+                                }
+                            }
+                        }
                 )
 
                 Icon(
@@ -216,3 +260,4 @@ fun ProgressBar() {
         )
     }
 }
+
