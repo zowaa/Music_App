@@ -39,9 +39,12 @@ import androidx.compose.ui.res.painterResource
 
 @Composable
 fun ListeningScreen() {
+    val context = LocalContext.current
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
     var currentSongIndex by remember { mutableStateOf(-1) }
     var isPlaying by remember { mutableStateOf(false) }
+    var isRepeatOn by remember { mutableStateOf(false) }
+
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -73,7 +76,19 @@ fun ListeningScreen() {
                 MiniPlayer(
                     mediaPlayer = mediaPlayer,
                     isPlaying = isPlaying,
-                    onPlayPause = { playing -> isPlaying = playing }
+                    onPlayPause = { playing -> isPlaying = playing },
+                    currentSongIndex = currentSongIndex,
+                    onSongChange = { newIndex ->
+                        currentSongIndex = newIndex
+                        mediaPlayer?.stop()
+                        mediaPlayer?.release()
+                        val player = MediaPlayer.create(context, AppData.songsResId[newIndex])
+                        player.start()
+                        mediaPlayer = player
+                        isPlaying = true
+                    },
+                    isRepeatOn = isRepeatOn,
+                    onRepeatToggle = { isRepeatOn = it }
                 )
             }
         }
@@ -141,7 +156,11 @@ fun SongsList(
 fun MiniPlayer(
     mediaPlayer: MediaPlayer?,
     isPlaying: Boolean,
-    onPlayPause: (Boolean) -> Unit
+    onPlayPause: (Boolean) -> Unit,
+    currentSongIndex: Int,
+    onSongChange: (Int) -> Unit,
+    isRepeatOn: Boolean,
+    onRepeatToggle: (Boolean) -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -174,7 +193,17 @@ fun MiniPlayer(
                 Icon(
                     painter = painterResource(id = R.drawable.previous),
                     contentDescription = "Previous",
-                    modifier = Modifier.size(34.dp),
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clickable {
+                            val newIndex = if (currentSongIndex > 0) {
+                                currentSongIndex - 1
+                            } else {
+                                AppData.songsName.size - 1
+                            }
+                            onSongChange(newIndex)
+
+                        },
                     tint = Color.Black
                 )
 
@@ -199,14 +228,32 @@ fun MiniPlayer(
                 Icon(
                     painter = painterResource(id = R.drawable.next),
                     contentDescription = "Next",
-                    modifier = Modifier.size(34.dp),
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clickable {
+                            val newIndex = if (currentSongIndex < AppData.songsName.size - 1) {
+                                currentSongIndex + 1
+                            } else {
+                                0
+                            }
+                            onSongChange(newIndex)
+
+                        },
                     tint = Color.Black
                 )
 
                 Icon(
-                    painter = painterResource(id = R.drawable.repeat),
+                    painter = painterResource(
+                        id = if (isRepeatOn) R.drawable.repeaton else R.drawable.repeat
+                    ),
                     contentDescription = "Repeat",
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clickable {
+                            onRepeatToggle(!isRepeatOn)
+
+                            mediaPlayer?.isLooping = !isRepeatOn
+                        },
                     tint = Color.Black
                 )
             }
