@@ -1,8 +1,16 @@
 package com.example.musicapp
 
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+
 object AppData {
+    val myFont = FontFamily(Font(R.font.cairo))
+
     var artistName: String = "الشابة شوشو"
-    var artistImg: Int =  R.drawable.artist
+
+    var rateUs_link: String = "https://google.com"
+    var otherApps_link: String = "https://google.com"
+    var privacyPolicy_link: String = "https://google.com"
 
     var songsName: List<String> = listOf(
         "يا ليلي ويا ليلا",

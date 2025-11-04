@@ -34,8 +34,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.net.toUri
@@ -44,7 +42,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
-val myFont = FontFamily(Font(R.font.cairo))
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,7 +69,7 @@ fun Home(navController: NavController) {
     ){
         Image(
             painter = painterResource(id = R.drawable.bg),
-            contentDescription = null,
+            contentDescription = "Background Image",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
@@ -85,7 +82,7 @@ fun Home(navController: NavController) {
         ) {
 
             Image(
-                painter = painterResource(id = AppData.artistImg),
+                painter = painterResource(id = R.drawable.artist),
                 contentDescription = "Artist Image",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -100,7 +97,7 @@ fun Home(navController: NavController) {
                 text = AppData.artistName,
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
-                fontFamily = myFont,
+                fontFamily = AppData.myFont,
                 color = Color.White
             )
         }
@@ -130,7 +127,7 @@ fun Home(navController: NavController) {
                     text = "ابدأ الاستماع",
                     fontSize = 25.sp,
                     fontWeight = FontWeight.Bold,
-                    fontFamily = myFont
+                    fontFamily = AppData.myFont
                 )
             }
 
@@ -144,9 +141,9 @@ fun Home(navController: NavController) {
                         text = "⭐ قيمنا",
                         fontSize = 15.sp,
                         color = Color.White,
-                        fontFamily = myFont,
+                        fontFamily = AppData.myFont,
                         modifier = Modifier.clickable {
-                            val intent = Intent(Intent.ACTION_VIEW, "https://google.com".toUri())
+                            val intent = Intent(Intent.ACTION_VIEW, AppData.rateUs_link.toUri())
                             context.startActivity(intent)
                         }
                             .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -156,16 +153,16 @@ fun Home(navController: NavController) {
                         text = "|",
                         fontSize = 15.sp,
                         color = Color.White,
-                        fontFamily = myFont
+                        fontFamily = AppData.myFont
                     )
 
                     Text(
                         text = "📱 تطبيقات أخرى",
                         fontSize = 15.sp,
                         color = Color.White,
-                        fontFamily = myFont,
+                        fontFamily = AppData.myFont,
                         modifier = Modifier.clickable {
-                            val intent = Intent(Intent.ACTION_VIEW, "https://google.com".toUri())
+                            val intent = Intent(Intent.ACTION_VIEW, AppData.otherApps_link.toUri())
                             context.startActivity(intent)
                         }
                             .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -175,16 +172,16 @@ fun Home(navController: NavController) {
                         text = "|",
                         fontSize = 15.sp,
                         color = Color.White,
-                        fontFamily = myFont
+                        fontFamily = AppData.myFont
                     )
 
                     Text(
                         text = "🔐 سياسة الخصوصية",
                         fontSize = 15.sp,
                         color = Color.White,
-                        fontFamily = myFont,
+                        fontFamily = AppData.myFont,
                         modifier = Modifier.clickable {
-                            val intent = Intent(Intent.ACTION_VIEW, "https://google.com".toUri())
+                            val intent = Intent(Intent.ACTION_VIEW, AppData.privacyPolicy_link.toUri())
                             context.startActivity(intent)
                         }
                             .padding(horizontal = 8.dp, vertical = 4.dp)

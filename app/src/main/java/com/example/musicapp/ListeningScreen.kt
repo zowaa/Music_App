@@ -31,7 +31,7 @@ fun ListeningScreen() {
     ) {
         Image(
             painter = painterResource(id = R.drawable.bg),
-            contentDescription = null,
+            contentDescription = "Background Image",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
@@ -43,7 +43,7 @@ fun ListeningScreen() {
                 modifier = Modifier
                     .weight(0.8f)
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(start = 16.dp, end = 16.dp, top = 25.dp, bottom = 16.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .border(2.dp, Color.Gray, RoundedCornerShape(16.dp))
                     .background(Color.White.copy(alpha = 0.5f)),
@@ -62,7 +62,7 @@ fun ListeningScreen() {
                         Text(
                             text = song,
                             fontSize = 20.sp,
-                            fontFamily = myFont,
+                            fontFamily = AppData.myFont,
                             color = Color.Black
                         )
                     }
