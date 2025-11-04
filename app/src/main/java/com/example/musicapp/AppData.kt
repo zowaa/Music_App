@@ -6,13 +6,13 @@ import androidx.compose.ui.text.font.FontFamily
 object AppData {
     val myFont = FontFamily(Font(R.font.cairo))
 
-    var artistName: String = "الشابة شوشو"
+    val artistName: String = "الشابة شوشو"
 
-    var rateUs_link: String = "https://google.com"
-    var otherApps_link: String = "https://google.com"
-    var privacyPolicy_link: String = "https://google.com"
+    val rateUs_link: String = "https://google.com"
+    val otherApps_link: String = "https://google.com"
+    val privacyPolicy_link: String = "https://google.com"
 
-    var songsName: List<String> = listOf(
+    val songsName: List<String> = listOf(
         "يا ليلي ويا ليلا",
         "إنت إيه",
         "مشاعر",
