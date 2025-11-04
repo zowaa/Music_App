@@ -91,11 +91,8 @@ fun SongsList() {
                     .background(Color.White.copy(alpha = 0.8f))
                     .padding(12.dp)
                     .clickable {
-                        // Stop current song
                         mediaPlayer?.stop()
                         mediaPlayer?.release()
-
-                        // Play selected song
                         mediaPlayer = MediaPlayer.create(context, AppData.songsResId[index])
                         mediaPlayer?.start()
                     }
