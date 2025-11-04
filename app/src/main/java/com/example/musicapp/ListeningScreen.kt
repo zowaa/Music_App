@@ -1,8 +1,10 @@
 package com.example.musicapp
 
+import android.media.MediaPlayer
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,10 +25,15 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 
 
@@ -62,6 +69,9 @@ fun ListeningScreen() {
 
 @Composable
 fun SongsList() {
+    val context = LocalContext.current
+    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
@@ -72,14 +82,23 @@ fun SongsList() {
         verticalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(12.dp)
     ) {
-        val songs = AppData.songsName
-        items(songs) { song ->
+        items(AppData.songsName.indices.toList()) { index ->
+            val song = AppData.songsName[index]
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(10.dp))
                     .background(Color.White.copy(alpha = 0.8f))
                     .padding(12.dp)
+                    .clickable {
+                        // Stop current song
+                        mediaPlayer?.stop()
+                        mediaPlayer?.release()
+
+                        // Play selected song
+                        mediaPlayer = MediaPlayer.create(context, AppData.songsResId[index])
+                        mediaPlayer?.start()
+                    }
             ) {
                 Text(
                     text = song,
