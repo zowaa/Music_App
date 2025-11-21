@@ -5,6 +5,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,25 +28,52 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 
 @Composable
 fun ListeningScreen() {
     val context = LocalContext.current
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
-    var currentSongIndex by remember { mutableStateOf(-1) }
+    var currentSongIndex by remember { mutableIntStateOf(-1) }
     var isPlaying by remember { mutableStateOf(false) }
     var isRepeatOn by remember { mutableStateOf(false) }
+    var progress by remember { mutableStateOf(0f) }
+    var currentPosition by remember { mutableIntStateOf(0) }
+    var duration by remember { mutableIntStateOf(0) }
+    var isDragging by remember { mutableStateOf(false) }
+
+    LaunchedEffect(mediaPlayer, isPlaying, isDragging) {
+        while (true) {
+            if (!isDragging) {
+                mediaPlayer?.let { player ->
+                    if (player.isPlaying) {
+                        currentPosition = player.currentPosition
+                        duration = player.duration
+                        progress = currentPosition / duration.toFloat()
+                    }
+                }
+            }
+            delay(200)
+        }
+    }
+
 
 
     Box(
@@ -84,11 +114,30 @@ fun ListeningScreen() {
                         mediaPlayer?.release()
                         val player = MediaPlayer.create(context, AppData.songsResId[newIndex])
                         player.start()
+                        duration = player.duration
                         mediaPlayer = player
                         isPlaying = true
                     },
                     isRepeatOn = isRepeatOn,
-                    onRepeatToggle = { isRepeatOn = it }
+                    onRepeatToggle = { isRepeatOn = it },
+                    progress = progress,
+                    currentPosition = currentPosition,
+                    duration = duration,
+                    onDragStart = { isDragging = true },
+                    onDragEnd = { pos ->
+                        isDragging = false
+                        mediaPlayer?.seekTo(pos)
+                        kotlinx.coroutines.MainScope().launch {
+                            delay(50)
+                            mediaPlayer?.let { player ->
+                                currentPosition = player.currentPosition
+                                progress = currentPosition / duration.toFloat()
+                            }
+                        }
+                    },
+                    onDrag = { newProgress ->
+                        progress = newProgress
+                    }
                 )
             }
         }
@@ -160,7 +209,13 @@ fun MiniPlayer(
     currentSongIndex: Int,
     onSongChange: (Int) -> Unit,
     isRepeatOn: Boolean,
-    onRepeatToggle: (Boolean) -> Unit
+    onRepeatToggle: (Boolean) -> Unit,
+    progress: Float,
+    currentPosition: Int,
+    duration: Int,
+    onDragStart: () -> Unit,
+    onDragEnd: (Int) -> Unit,
+    onDrag: (Float) -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -259,52 +314,113 @@ fun MiniPlayer(
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                ProgressBar()
+                ProgressBar(
+                    progress = progress,
+                    onDragStart = onDragStart,
+                    onDrag = onDrag,
+                    onDragEnd = onDragEnd,
+                    duration = duration
+                )
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("00:00", color = Color.Black, fontFamily = AppData.myFont)
-                    Text("00:00", color = Color.Black, fontFamily = AppData.myFont)
+                    Text(formatTime(currentPosition), color = Color.Black, fontFamily = AppData.myFont)
+                    Text(formatTime(duration), color = Color.Black, fontFamily = AppData.myFont)
                 }
             }
         }
     }
 }
+fun formatTime(ms: Int): String {
+    val totalSec = ms / 1000
+    val min = totalSec / 60
+    val sec = totalSec % 60
+    return "%02d:%02d".format(min, sec)
+}
+
 
 @Composable
-fun ProgressBar() {
+fun ProgressBar(
+    progress: Float,
+    onDragStart: () -> Unit,
+    onDrag: (Float) -> Unit,
+    onDragEnd: (Int) -> Unit,
+    duration: Int
+) {
+    var barWidth by remember { mutableStateOf(0f) }
+    val density = LocalDensity.current
+
+    var localProgress by remember { mutableStateOf(progress) }
+
+    LaunchedEffect(progress) {
+        localProgress = progress
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(22.dp),
-        contentAlignment = Alignment.Center
+            .height(30.dp)
+            .padding(horizontal = 8.dp)
+            .onGloballyPositioned { barWidth = it.size.width.toFloat() }
+            .pointerInput(Unit) {
+                detectTapGestures { tap ->
+                    val newProgress = (tap.x / barWidth).coerceIn(0f, 1f)
+                    onDragStart()
+                    localProgress = newProgress
+                    onDrag(newProgress)
+                    onDragEnd((newProgress * duration).toInt())
+                }
+            }
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = {
+                        onDragStart()
+                    },
+                    onDrag = { change, _ ->
+                        val x = change.position.x.coerceIn(0f, barWidth)
+                        val newProgress = (x / barWidth).coerceIn(0f, 1f)
+                        localProgress = newProgress
+                        onDrag(newProgress)
+                    },
+                    onDragEnd = {
+                        val finalProgress = localProgress.coerceIn(0f, 1f)
+                        onDragEnd((finalProgress * duration).toInt())
+                    },
+                )
+            },
+        contentAlignment = Alignment.CenterStart
     ) {
 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(3.dp)
+                .height(4.dp)
                 .clip(RoundedCornerShape(50))
                 .background(Color.LightGray.copy(alpha = 0.7f))
+                .align(Alignment.Center)
         )
 
         Box(
             modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .height(3.dp)
+                .fillMaxWidth(localProgress)
+                .height(4.dp)
                 .clip(RoundedCornerShape(50))
                 .background(Color.Black)
+                .align(Alignment.CenterStart)
         )
+
+        val knobOffset = with(density) { (localProgress * barWidth).toDp() - 6.dp }
 
         Box(
             modifier = Modifier
-                .size(10.dp)
+                .offset(x = knobOffset)
+                .size(12.dp)
                 .clip(RoundedCornerShape(50))
                 .background(Color.Black)
+                .align(Alignment.CenterStart)
         )
     }
 }
-
