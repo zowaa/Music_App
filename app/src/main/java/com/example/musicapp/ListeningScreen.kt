@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,10 +55,31 @@ fun ListeningScreen() {
     var currentSongIndex by remember { mutableIntStateOf(-1) }
     var isPlaying by remember { mutableStateOf(false) }
     var isRepeatOn by remember { mutableStateOf(false) }
-    var progress by remember { mutableStateOf(0f) }
+    var progress by remember { mutableFloatStateOf(0f) }
     var currentPosition by remember { mutableIntStateOf(0) }
     var duration by remember { mutableIntStateOf(0) }
     var isDragging by remember { mutableStateOf(false) }
+
+    fun playSong(index: Int) {
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+
+        val player = MediaPlayer.create(context, AppData.songsResId[index])
+
+        duration = player.duration
+
+        player.setOnCompletionListener {
+            val nextIndex = if (index < AppData.songsResId.size - 1) index + 1 else 0
+            playSong(nextIndex)
+        }
+
+        player.start()
+
+        mediaPlayer = player
+        currentSongIndex = index
+        isPlaying = true
+    }
+
 
     LaunchedEffect(mediaPlayer, isPlaying, isDragging) {
         while (true) {
@@ -93,10 +115,8 @@ fun ListeningScreen() {
                 modifier = Modifier.weight(0.8f)
             ) {
                 SongsList(
-                    mediaPlayer = mediaPlayer,
-                    onMediaPlayerChange = { newPlayer -> mediaPlayer = newPlayer; isPlaying = true },
                     currentSongIndex = currentSongIndex,
-                    onSongSelected = { index -> currentSongIndex = index }
+                    playSong = { index -> playSong(index) }
                 )
             }
 
@@ -109,14 +129,7 @@ fun ListeningScreen() {
                     onPlayPause = { playing -> isPlaying = playing },
                     currentSongIndex = currentSongIndex,
                     onSongChange = { newIndex ->
-                        currentSongIndex = newIndex
-                        mediaPlayer?.stop()
-                        mediaPlayer?.release()
-                        val player = MediaPlayer.create(context, AppData.songsResId[newIndex])
-                        player.start()
-                        duration = player.duration
-                        mediaPlayer = player
-                        isPlaying = true
+                        playSong(newIndex)
                     },
                     isRepeatOn = isRepeatOn,
                     onRepeatToggle = { isRepeatOn = it },
@@ -146,12 +159,9 @@ fun ListeningScreen() {
 
 @Composable
 fun SongsList(
-    mediaPlayer: MediaPlayer?,
-    onMediaPlayerChange: (MediaPlayer) -> Unit,
     currentSongIndex: Int,
-    onSongSelected: (Int) -> Unit
+    playSong: (Int) -> Unit
 ) {
-    val context = LocalContext.current
 
     LazyColumn(
         modifier = Modifier
@@ -180,14 +190,7 @@ fun SongsList(
                     )
                     .padding(12.dp)
                     .clickable {
-                        mediaPlayer?.stop()
-                        mediaPlayer?.release()
-
-                        val player = MediaPlayer.create(context, AppData.songsResId[index])
-                        player.start()
-
-                        onMediaPlayerChange(player)
-                        onSongSelected(index)
+                        playSong(index)
                     }
             ) {
                 Text(
@@ -350,10 +353,10 @@ fun ProgressBar(
     onDragEnd: (Int) -> Unit,
     duration: Int
 ) {
-    var barWidth by remember { mutableStateOf(0f) }
+    var barWidth by remember { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
 
-    var localProgress by remember { mutableStateOf(progress) }
+    var localProgress by remember { mutableFloatStateOf(progress) }
 
     LaunchedEffect(progress) {
         localProgress = progress
