@@ -69,9 +69,15 @@ fun ListeningScreen() {
         duration = player.duration
 
         player.setOnCompletionListener {
-            val nextIndex = if (index < AppData.songsResId.size - 1) index + 1 else 0
-            playSong(nextIndex)
+            if (isRepeatOn) {
+                player.seekTo(0)
+                player.start()
+            } else {
+                val nextIndex = if (index < AppData.songsResId.size - 1) index + 1 else 0
+                playSong(nextIndex)
+            }
         }
+
 
         player.start()
 
@@ -88,7 +94,8 @@ fun ListeningScreen() {
                     if (player.isPlaying) {
                         currentPosition = player.currentPosition
                         duration = player.duration
-                        progress = currentPosition / duration.toFloat()
+                        progress = if (duration > 0) currentPosition / duration.toFloat() else 0f
+
                     }
                 }
             }
@@ -309,8 +316,6 @@ fun MiniPlayer(
                         .size(28.dp)
                         .clickable {
                             onRepeatToggle(!isRepeatOn)
-
-                            mediaPlayer?.isLooping = !isRepeatOn
                         },
                     tint = Color.Black
                 )
