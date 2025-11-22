@@ -322,7 +322,8 @@ fun MiniPlayer(
                     onDragStart = onDragStart,
                     onDrag = onDrag,
                     onDragEnd = onDragEnd,
-                    duration = duration
+                    duration = duration,
+                    songIndex = currentSongIndex
                 )
                 Spacer(modifier = Modifier.height(4.dp))
 
@@ -351,7 +352,8 @@ fun ProgressBar(
     onDragStart: () -> Unit,
     onDrag: (Float) -> Unit,
     onDragEnd: (Int) -> Unit,
-    duration: Int
+    duration: Int,
+    songIndex: Int
 ) {
     var barWidth by remember { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
@@ -368,7 +370,7 @@ fun ProgressBar(
             .height(30.dp)
             .padding(horizontal = 8.dp)
             .onGloballyPositioned { barWidth = it.size.width.toFloat() }
-            .pointerInput(Unit) {
+            .pointerInput(songIndex) {
                 detectTapGestures { tap ->
                     val newProgress = (tap.x / barWidth).coerceIn(0f, 1f)
                     onDragStart()
@@ -377,7 +379,7 @@ fun ProgressBar(
                     onDragEnd((newProgress * duration).toInt())
                 }
             }
-            .pointerInput(Unit) {
+            .pointerInput(songIndex) {
                 detectDragGestures(
                     onDragStart = {
                         onDragStart()
