@@ -48,12 +48,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun ListeningScreen(
     viewModel: MusicViewModel = viewModel()
 ) {
-    val currentSongIndex by viewModel.currentSongIndex.collectAsState()
-    val isPlaying by viewModel.isPlaying.collectAsState()
-    val isRepeatOn by viewModel.isRepeatOn.collectAsState()
-    val progress by viewModel.progress.collectAsState()
-    val currentPosition by viewModel.currentPosition.collectAsState()
-    val duration by viewModel.duration.collectAsState()
+    val playerState by viewModel.playerState.collectAsState()
+
+    val currentSongIndex = playerState.currentSongIndex
+    val isPlaying = playerState.isPlaying
+    val isRepeatOn = playerState.isRepeatOn
+    val progress = playerState.progress
+    val currentPosition = playerState.currentPosition
+    val duration = playerState.duration
 
     Box(
         modifier = Modifier.fillMaxSize()

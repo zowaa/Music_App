@@ -10,32 +10,22 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
+data class MusicPlayerState(
+    val currentSongIndex: Int = -1,
+    val isPlaying: Boolean = false,
+    val isRepeatOn: Boolean = false,
+    val progress: Float = 0f,
+    val currentPosition: Int = 0,
+    val duration: Int = 0
+)
+
 class MusicViewModel( application: Application ) : AndroidViewModel(application) {
+    private val _playerState = MutableStateFlow(MusicPlayerState())
+    val playerState: StateFlow<MusicPlayerState> = _playerState
 
     private val appContext get() = getApplication<Application>().applicationContext
-
     private var mediaPlayer: MediaPlayer? = null
-
-    private val _currentSongIndex = MutableStateFlow(-1)
-    val currentSongIndex: StateFlow<Int> = _currentSongIndex
-
-    private val _isPlaying = MutableStateFlow(false)
-    val isPlaying: StateFlow<Boolean> = _isPlaying
-
-    private val _isRepeatOn = MutableStateFlow(false)
-    val isRepeatOn: StateFlow<Boolean> = _isRepeatOn
-
-    private val _progress = MutableStateFlow(0f)
-    val progress: StateFlow<Float> = _progress
-
-    private val _currentPosition = MutableStateFlow(0)
-    val currentPosition: StateFlow<Int> = _currentPosition
-
-    private val _duration = MutableStateFlow(0)
-    val duration: StateFlow<Int> = _duration
-
     var isDragging = false
-
     private var progressJob: Job? = null
 
     init {
@@ -47,12 +37,13 @@ class MusicViewModel( application: Application ) : AndroidViewModel(application)
         if (mediaPlayer == null) {
             mediaPlayer = MediaPlayer().apply {
                 setOnCompletionListener {
-                    if (_isRepeatOn.value) {
+                    val state = _playerState.value
+                    if (state.isRepeatOn) {
                         seekTo(0)
                         start()
                     } else {
-                        val nextIndex = if (_currentSongIndex.value < AppData.songsResId.size - 1)
-                            _currentSongIndex.value + 1 else 0
+                        val nextIndex = if (state.currentSongIndex < AppData.songsResId.size - 1)
+                            state.currentSongIndex + 1 else 0
                         playSong(nextIndex)
                     }
                 }
@@ -70,9 +61,13 @@ class MusicViewModel( application: Application ) : AndroidViewModel(application)
         player.prepare()
 
         player.start()
-        _currentSongIndex.value = index
-        _duration.value = player.duration
-        _isPlaying.value = true
+        _playerState.value = _playerState.value.copy(
+            currentSongIndex = index,
+            isPlaying = true,
+            duration = player.duration,
+            currentPosition = player.currentPosition,
+            progress = 0f
+        )
 
     }
 
@@ -80,32 +75,35 @@ class MusicViewModel( application: Application ) : AndroidViewModel(application)
         mediaPlayer?.let { player ->
             if (player.isPlaying) {
                 player.pause()
-                _isPlaying.value = false
+                _playerState.value = _playerState.value.copy(isPlaying = false)
             } else {
                 player.start()
-                _isPlaying.value = true
+                _playerState.value = _playerState.value.copy(isPlaying = true)
             }
         }
     }
 
     fun nextSong() {
-        val index = _currentSongIndex.value
-        val newIndex = if (index < AppData.songsResId.size - 1) index + 1 else 0
-        playSong(newIndex)
+        val nextIndex = if (_playerState.value.currentSongIndex < AppData.songsResId.size - 1)
+        _playerState.value.currentSongIndex + 1 else 0
+        playSong(nextIndex)
     }
 
     fun previousSong() {
-        val index = _currentSongIndex.value
-        val newIndex = if (index > 0) index - 1 else AppData.songsResId.size - 1
-        playSong(newIndex)
+        val prevIndex = if (_playerState.value.currentSongIndex > 0)
+            _playerState.value.currentSongIndex - 1 else AppData.songsResId.size - 1
+        playSong(prevIndex)
     }
 
     fun toggleRepeat() {
-        _isRepeatOn.value = !_isRepeatOn.value
+        _playerState.value = _playerState.value.copy(
+            isRepeatOn = !_playerState.value.isRepeatOn
+        )
     }
 
     fun seekTo(position: Int) {
         mediaPlayer?.seekTo(position)
+        _playerState.value = _playerState.value.copy(currentPosition = position)
     }
 
     private fun startProgressUpdater() {
@@ -115,10 +113,12 @@ class MusicViewModel( application: Application ) : AndroidViewModel(application)
             while (true) {
                 val player = mediaPlayer
                 if (player != null && player.isPlaying && !isDragging) {
-                    _currentPosition.value = player.currentPosition
-                    _duration.value = player.duration
-                    _progress.value =
-                        if (player.duration > 0) player.currentPosition / player.duration.toFloat() else 0f
+                    _playerState.value = _playerState.value.copy(
+                        currentPosition = player.currentPosition,
+                        duration = player.duration,
+                        progress = if (player.duration > 0)
+                            player.currentPosition / player.duration.toFloat() else 0f
+                    )
                 }
                 delay(200)
             }
@@ -136,7 +136,7 @@ class MusicViewModel( application: Application ) : AndroidViewModel(application)
     }
 
     fun setProgress(newProgress: Float) {
-        _progress.value = newProgress
+        _playerState.value = _playerState.value.copy(progress = newProgress)
     }
 
 }
