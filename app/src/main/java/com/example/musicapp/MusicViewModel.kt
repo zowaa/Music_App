@@ -40,32 +40,38 @@ class MusicViewModel( application: Application ) : AndroidViewModel(application)
 
     init {
         startProgressUpdater()
+        initMediaPlayer()
+    }
+
+    private fun initMediaPlayer() {
+        if (mediaPlayer == null) {
+            mediaPlayer = MediaPlayer().apply {
+                setOnCompletionListener {
+                    if (_isRepeatOn.value) {
+                        seekTo(0)
+                        start()
+                    } else {
+                        val nextIndex = if (_currentSongIndex.value < AppData.songsResId.size - 1)
+                            _currentSongIndex.value + 1 else 0
+                        playSong(nextIndex)
+                    }
+                }
+            }
+        }
     }
 
     fun playSong(index: Int) {
-        mediaPlayer?.apply {
-            stop()
-            reset()
-            release()
-        }
+        val player = mediaPlayer ?: return
 
-
-        val player = MediaPlayer.create(appContext, AppData.songsResId[index])
-        _duration.value = player.duration
-
-        player.setOnCompletionListener {
-            if (_isRepeatOn.value) {
-                player.seekTo(0)
-                player.start()
-            } else {
-                val nextIndex = if (index < AppData.songsResId.size - 1) index + 1 else 0
-                playSong(nextIndex)
-            }
-        }
+        player.reset()
+        val afd = appContext.resources.openRawResourceFd(AppData.songsResId[index])
+        player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+        afd.close()
+        player.prepare()
 
         player.start()
-        mediaPlayer = player
         _currentSongIndex.value = index
+        _duration.value = player.duration
         _isPlaying.value = true
 
     }
