@@ -1,6 +1,5 @@
 package com.example.musicapp
 
-import android.media.MediaPlayer
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,10 +28,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,69 +39,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 
 @Composable
-fun ListeningScreen() {
-    val context = LocalContext.current
-    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
-    var currentSongIndex by remember { mutableIntStateOf(-1) }
-    var isPlaying by remember { mutableStateOf(false) }
-    var isRepeatOn by remember { mutableStateOf(false) }
-    var progress by remember { mutableFloatStateOf(0f) }
-    var currentPosition by remember { mutableIntStateOf(0) }
-    var duration by remember { mutableIntStateOf(0) }
-    var isDragging by remember { mutableStateOf(false) }
-
-    fun playSong(index: Int) {
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
-
-        val player = MediaPlayer.create(context, AppData.songsResId[index])
-
-        duration = player.duration
-
-        player.setOnCompletionListener {
-            if (isRepeatOn) {
-                player.seekTo(0)
-                player.start()
-            } else {
-                val nextIndex = if (index < AppData.songsResId.size - 1) index + 1 else 0
-                playSong(nextIndex)
-            }
-        }
-
-
-        player.start()
-
-        mediaPlayer = player
-        currentSongIndex = index
-        isPlaying = true
-    }
-
-
-    LaunchedEffect(mediaPlayer, isPlaying, isDragging) {
-        while (true) {
-            if (!isDragging) {
-                mediaPlayer?.let { player ->
-                    if (player.isPlaying) {
-                        currentPosition = player.currentPosition
-                        duration = player.duration
-                        progress = if (duration > 0) currentPosition / duration.toFloat() else 0f
-
-                    }
-                }
-            }
-            delay(200)
-        }
-    }
-
-
+fun ListeningScreen(
+    viewModel: MusicViewModel = viewModel()
+) {
+    val currentSongIndex by viewModel.currentSongIndex.collectAsState()
+    val isPlaying by viewModel.isPlaying.collectAsState()
+    val isRepeatOn by viewModel.isRepeatOn.collectAsState()
+    val progress by viewModel.progress.collectAsState()
+    val currentPosition by viewModel.currentPosition.collectAsState()
+    val duration by viewModel.duration.collectAsState()
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -123,7 +73,7 @@ fun ListeningScreen() {
             ) {
                 SongsList(
                     currentSongIndex = currentSongIndex,
-                    playSong = { index -> playSong(index) }
+                    playSong = { index -> viewModel.playSong(index) }
                 )
             }
 
@@ -131,33 +81,23 @@ fun ListeningScreen() {
                 modifier = Modifier.weight(0.2f)
             ) {
                 MiniPlayer(
-                    mediaPlayer = mediaPlayer,
                     isPlaying = isPlaying,
-                    onPlayPause = { playing -> isPlaying = playing },
+                    onPlayPause = { viewModel.togglePlayPause() },
+                    onNext = {viewModel.nextSong()},
+                    onPrevious = {viewModel.previousSong()},
                     currentSongIndex = currentSongIndex,
-                    onSongChange = { newIndex ->
-                        playSong(newIndex)
-                    },
                     isRepeatOn = isRepeatOn,
-                    onRepeatToggle = { isRepeatOn = it },
+                    onRepeatToggle = {viewModel.toggleRepeat()},
                     progress = progress,
                     currentPosition = currentPosition,
                     duration = duration,
-                    onDragStart = { isDragging = true },
+                    onDragStart = { viewModel.isDragging = true },
                     onDragEnd = { pos ->
-                        isDragging = false
-                        mediaPlayer?.seekTo(pos)
-                        kotlinx.coroutines.MainScope().launch {
-                            delay(50)
-                            mediaPlayer?.let { player ->
-                                currentPosition = player.currentPosition
-                                progress = currentPosition / duration.toFloat()
-                            }
-                        }
+                        viewModel.isDragging = false
+                        viewModel.seekTo(pos)
                     },
-                    onDrag = { newProgress ->
-                        progress = newProgress
-                    }
+                    onDrag = { viewModel.setProgress(it) }
+
                 )
             }
         }
@@ -213,11 +153,11 @@ fun SongsList(
 
 @Composable
 fun MiniPlayer(
-    mediaPlayer: MediaPlayer?,
     isPlaying: Boolean,
-    onPlayPause: (Boolean) -> Unit,
+    onPlayPause: () -> Unit,
+    onNext : () -> Unit,
+    onPrevious : () -> Unit,
     currentSongIndex: Int,
-    onSongChange: (Int) -> Unit,
     isRepeatOn: Boolean,
     onRepeatToggle: (Boolean) -> Unit,
     progress: Float,
@@ -260,15 +200,7 @@ fun MiniPlayer(
                     contentDescription = "Previous",
                     modifier = Modifier
                         .size(34.dp)
-                        .clickable {
-                            val newIndex = if (currentSongIndex > 0) {
-                                currentSongIndex - 1
-                            } else {
-                                AppData.songsName.size - 1
-                            }
-                            onSongChange(newIndex)
-
-                        },
+                        .clickable {onPrevious()},
                     tint = Color.Black
                 )
 
@@ -278,15 +210,7 @@ fun MiniPlayer(
                     modifier = Modifier
                         .size(50.dp)
                         .clickable {
-                            mediaPlayer?.let { player ->
-                                if (player.isPlaying) {
-                                    player.pause()
-                                    onPlayPause(false)
-                                } else {
-                                    player.start()
-                                    onPlayPause(true)
-                                }
-                            }
+                            onPlayPause()
                         }
                 )
 
@@ -295,15 +219,7 @@ fun MiniPlayer(
                     contentDescription = "Next",
                     modifier = Modifier
                         .size(34.dp)
-                        .clickable {
-                            val newIndex = if (currentSongIndex < AppData.songsName.size - 1) {
-                                currentSongIndex + 1
-                            } else {
-                                0
-                            }
-                            onSongChange(newIndex)
-
-                        },
+                        .clickable { onNext() },
                     tint = Color.Black
                 )
 
@@ -343,13 +259,15 @@ fun MiniPlayer(
         }
     }
 }
-fun formatTime(ms: Int): String {
+
+fun formatTime(
+    ms: Int
+): String {
     val totalSec = ms / 1000
     val min = totalSec / 60
     val sec = totalSec % 60
     return "%02d:%02d".format(min, sec)
 }
-
 
 @Composable
 fun ProgressBar(
