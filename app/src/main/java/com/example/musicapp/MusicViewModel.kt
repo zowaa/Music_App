@@ -4,6 +4,7 @@ import android.app.Application
 import android.media.MediaPlayer
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,10 +36,19 @@ class MusicViewModel( application: Application ) : AndroidViewModel(application)
 
     var isDragging = false
 
+    private var progressJob: Job? = null
+
+    init {
+        startProgressUpdater()
+    }
 
     fun playSong(index: Int) {
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
+        mediaPlayer?.apply {
+            stop()
+            reset()
+            release()
+        }
+
 
         val player = MediaPlayer.create(appContext, AppData.songsResId[index])
         _duration.value = player.duration
@@ -58,7 +68,6 @@ class MusicViewModel( application: Application ) : AndroidViewModel(application)
         _currentSongIndex.value = index
         _isPlaying.value = true
 
-        startProgressUpdater()
     }
 
     fun togglePlayPause() {
@@ -94,13 +103,16 @@ class MusicViewModel( application: Application ) : AndroidViewModel(application)
     }
 
     private fun startProgressUpdater() {
-        viewModelScope.launch {
-            while (mediaPlayer?.isPlaying == true) {
-                if (!isDragging) {
-                    _currentPosition.value = mediaPlayer?.currentPosition ?: 0
-                    _duration.value = mediaPlayer?.duration ?: 0
+        if (progressJob != null) return
+
+        progressJob = viewModelScope.launch {
+            while (true) {
+                val player = mediaPlayer
+                if (player != null && player.isPlaying && !isDragging) {
+                    _currentPosition.value = player.currentPosition
+                    _duration.value = player.duration
                     _progress.value =
-                        if (_duration.value > 0) _currentPosition.value / _duration.value.toFloat() else 0f
+                        if (player.duration > 0) player.currentPosition / player.duration.toFloat() else 0f
                 }
                 delay(200)
             }
@@ -108,7 +120,12 @@ class MusicViewModel( application: Application ) : AndroidViewModel(application)
     }
 
     override fun onCleared() {
-        mediaPlayer?.release()
+        progressJob?.cancel()
+        mediaPlayer?.apply {
+            stop()
+            reset()
+            release()
+        }
         super.onCleared()
     }
 
