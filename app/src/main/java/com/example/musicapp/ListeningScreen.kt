@@ -41,6 +41,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 
@@ -154,6 +155,17 @@ fun SongsList(
 }
 
 @Composable
+fun PlayerIcon(resId: Int, description: String, size: Dp, onClick: () -> Unit) {
+    Icon(
+        painter = painterResource(id = resId),
+        contentDescription = description,
+        modifier = Modifier.size(size).clickable { onClick() },
+        tint = Color.Black
+    )
+}
+
+
+@Composable
 fun MiniPlayer(
     isPlaying: Boolean,
     onPlayPause: () -> Unit,
@@ -190,53 +202,11 @@ fun MiniPlayer(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.shuffle),
-                    contentDescription = "Shuffle",
-                    modifier = Modifier.size(28.dp),
-                    tint = Color.Black
-                )
-
-                Icon(
-                    painter = painterResource(id = R.drawable.previous),
-                    contentDescription = "Previous",
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clickable {onPrevious()},
-                    tint = Color.Black
-                )
-
-                Icon(
-                    painter = painterResource(id = if (isPlaying) R.drawable.pause else R.drawable.play),
-                    contentDescription = "Play/Pause",
-                    modifier = Modifier
-                        .size(50.dp)
-                        .clickable {
-                            onPlayPause()
-                        }
-                )
-
-                Icon(
-                    painter = painterResource(id = R.drawable.next),
-                    contentDescription = "Next",
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clickable { onNext() },
-                    tint = Color.Black
-                )
-
-                Icon(
-                    painter = painterResource(
-                        id = if (isRepeatOn) R.drawable.repeaton else R.drawable.repeat
-                    ),
-                    contentDescription = "Repeat",
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clickable {
-                            onRepeatToggle(!isRepeatOn)
-                        },
-                    tint = Color.Black
-                )
+                PlayerIcon(R.drawable.shuffle, "Shuffle", 28.dp) { }
+                PlayerIcon(R.drawable.previous, "Previous", 34.dp, onPrevious)
+                PlayerIcon(if (isPlaying) R.drawable.pause else R.drawable.play, "Play/Pause", 50.dp, onPlayPause)
+                PlayerIcon(R.drawable.next, "Next", 34.dp, onNext)
+                PlayerIcon(if (isRepeatOn) R.drawable.repeaton else R.drawable.repeat, "Repeat", 28.dp){ onRepeatToggle(!isRepeatOn)}
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
