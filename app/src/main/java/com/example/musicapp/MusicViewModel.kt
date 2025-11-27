@@ -1,12 +1,12 @@
 package com.example.musicapp
 
 import android.app.Application
-import android.media.MediaPlayer
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
+import android.os.IBinder
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -22,121 +22,91 @@ data class MusicPlayerState(
 class MusicViewModel( application: Application ) : AndroidViewModel(application) {
     private val _playerState = MutableStateFlow(MusicPlayerState())
     val playerState: StateFlow<MusicPlayerState> = _playerState
-
     private val appContext get() = getApplication<Application>().applicationContext
-    private var mediaPlayer: MediaPlayer? = null
+    @Suppress("StaticFieldLeak")
+    private var musicService: MusicService? = null
+    private var isServiceBound = false
     var isDragging = false
-    private var progressJob: Job? = null
 
-    init {
-        startProgressUpdater()
-        initMediaPlayer()
-    }
 
-    private fun initMediaPlayer() {
-        if (mediaPlayer == null) {
-            mediaPlayer = MediaPlayer().apply {
-                setOnCompletionListener {
-                    val state = _playerState.value
-                    if (state.isRepeatOn) {
-                        seekTo(0)
-                        start()
-                    } else {
-                        val nextIndex = if (state.currentSongIndex < AppData.songsResId.size - 1)
-                            state.currentSongIndex + 1 else 0
-                        playSong(nextIndex)
-                    }
+
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
+            val localBinder = binder as? MusicService.LocalBinder
+            musicService = localBinder?.getService()
+            isServiceBound = true
+
+            musicService?.setCallback(object : MusicService.PlayerCallback {
+                override fun onStateChanged(state: MusicPlayerState) {
+                    _playerState.value = state
                 }
-            }
+            })
+
+            musicService?.let { _playerState.value = it.playerState() }
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            isServiceBound = false
+            musicService = null
         }
     }
 
+
+    init {
+        val intent = Intent(appContext, MusicService::class.java)
+        appContext.startService(intent)
+        appContext.bindService(intent, connection, Context.BIND_AUTO_CREATE)
+    }
+
+    fun onStartDragging() {
+        isDragging = true
+        musicService?.startDragging()
+    }
+
+    fun onStopDragging() {
+        isDragging = false
+        musicService?.stopDragging()
+    }
+
+
     fun playSong(index: Int) {
-        val player = mediaPlayer ?: return
-
-        player.reset()
-        val afd = appContext.resources.openRawResourceFd(AppData.songsResId[index])
-        player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-        afd.close()
-        player.prepare()
-
-        player.start()
-        _playerState.value = _playerState.value.copy(
-            currentSongIndex = index,
-            isPlaying = true,
-            duration = player.duration,
-            currentPosition = player.currentPosition,
-            progress = 0f
-        )
-
+        musicService?.playSong(index)
     }
 
     fun togglePlayPause() {
-        mediaPlayer?.let { player ->
-            if (player.isPlaying) {
-                player.pause()
-                _playerState.value = _playerState.value.copy(isPlaying = false)
-            } else {
-                player.start()
-                _playerState.value = _playerState.value.copy(isPlaying = true)
-            }
-        }
+        musicService?.togglePlayPause()
     }
 
     fun nextSong() {
-        val nextIndex = if (_playerState.value.currentSongIndex < AppData.songsResId.size - 1)
-        _playerState.value.currentSongIndex + 1 else 0
-        playSong(nextIndex)
+        musicService?.nextSong()
+
     }
 
     fun previousSong() {
-        val prevIndex = if (_playerState.value.currentSongIndex > 0)
-            _playerState.value.currentSongIndex - 1 else AppData.songsResId.size - 1
-        playSong(prevIndex)
+        musicService?.previousSong()
     }
 
     fun toggleRepeat() {
-        _playerState.value = _playerState.value.copy(
-            isRepeatOn = !_playerState.value.isRepeatOn
-        )
+        musicService?.toggleRepeat()
     }
 
     fun seekTo(position: Int) {
-        mediaPlayer?.seekTo(position)
-        _playerState.value = _playerState.value.copy(currentPosition = position)
-    }
-
-    private fun startProgressUpdater() {
-        if (progressJob != null) return
-
-        progressJob = viewModelScope.launch {
-            while (true) {
-                val player = mediaPlayer
-                if (player != null && player.isPlaying && !isDragging) {
-                    _playerState.value = _playerState.value.copy(
-                        currentPosition = player.currentPosition,
-                        duration = player.duration,
-                        progress = if (player.duration > 0)
-                            player.currentPosition / player.duration.toFloat() else 0f
-                    )
-                }
-                delay(200)
-            }
-        }
-    }
-
-    override fun onCleared() {
-        progressJob?.cancel()
-        mediaPlayer?.apply {
-            stop()
-            reset()
-            release()
-        }
-        super.onCleared()
+        musicService?.seekTo(position)
     }
 
     fun setProgress(newProgress: Float) {
-        _playerState.value = _playerState.value.copy(progress = newProgress)
+            musicService?.setProgressValue(newProgress)
     }
+
+    override fun onCleared() {
+        if (isServiceBound) {
+            appContext.unbindService(connection)
+            isServiceBound = false
+        }
+        musicService?.setCallback(null)
+        musicService = null
+        super.onCleared()
+    }
+
 
 }

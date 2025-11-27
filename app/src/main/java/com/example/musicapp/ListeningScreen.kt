@@ -93,9 +93,9 @@ fun ListeningScreen(
                     progress = progress,
                     currentPosition = currentPosition,
                     duration = duration,
-                    onDragStart = { viewModel.isDragging = true },
+                    onDragStart = { viewModel.onStartDragging() },
                     onDragEnd = { pos ->
-                        viewModel.isDragging = false
+                        viewModel.onStopDragging()
                         viewModel.seekTo(pos)
                     },
                     onDrag = { viewModel.setProgress(it) }
