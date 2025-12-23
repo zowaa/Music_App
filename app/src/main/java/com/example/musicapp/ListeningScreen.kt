@@ -51,12 +51,6 @@ fun ListeningScreen(
 ) {
     val playerState by viewModel.playerState.collectAsState()
 
-    val currentSongIndex = playerState.currentSongIndex
-    val isPlaying = playerState.isPlaying
-    val isRepeatOn = playerState.isRepeatOn
-    val progress = playerState.progress
-    val currentPosition = playerState.currentPosition
-    val duration = playerState.duration
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -75,7 +69,7 @@ fun ListeningScreen(
                 modifier = Modifier.weight(0.8f)
             ) {
                 SongsList(
-                    currentSongIndex = currentSongIndex,
+                    currentSongIndex = playerState.currentSongIndex,
                     playSong = { index -> viewModel.playSong(index) }
                 )
             }
@@ -84,22 +78,12 @@ fun ListeningScreen(
                 modifier = Modifier.weight(0.2f)
             ) {
                 MiniPlayer(
-                    isPlaying = isPlaying,
+                    playerState = playerState,
                     onPlayPause = { viewModel.togglePlayPause() },
-                    onNext = { viewModel.nextSong() },
-                    onPrevious = { viewModel.previousSong() },
-                    currentSongIndex = currentSongIndex,
-                    isRepeatOn = isRepeatOn,
+                    onNext = { viewModel.playNext() },
+                    onPrevious = { viewModel.playPrevious() },
                     onRepeatToggle = { viewModel.toggleRepeat() },
-                    progress = progress,
-                    currentPosition = currentPosition,
-                    duration = duration,
-                    onDragStart = { viewModel.onStartDragging() },
-                    onDragEnd = { pos ->
-                        viewModel.onStopDragging()
-                        viewModel.seekTo(pos)
-                    },
-                    onDrag = { viewModel.setProgress(it) }
+                    onDragEnd = { pos -> viewModel.seekTo(pos.toFloat() / playerState.duration) },
                 )
             }
         }
@@ -153,19 +137,12 @@ fun SongsList(
 
 @Composable
 fun MiniPlayer(
-    isPlaying: Boolean,
+    playerState: MusicPlayerState,
     onPlayPause: () -> Unit,
     onNext : () -> Unit,
     onPrevious : () -> Unit,
-    currentSongIndex: Int,
-    isRepeatOn: Boolean,
     onRepeatToggle: (Boolean) -> Unit,
-    progress: Float,
-    currentPosition: Int,
-    duration: Int,
-    onDragStart: () -> Unit,
     onDragEnd: (Int) -> Unit,
-    onDrag: (Float) -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -189,19 +166,17 @@ fun MiniPlayer(
             ) {
                 PlayerIcon(R.drawable.shuffle, "Shuffle", 28.dp) { }
                 PlayerIcon(R.drawable.previous, "Previous", 34.dp, onPrevious)
-                PlayerIcon(if (isPlaying) R.drawable.pause else R.drawable.play, "Play/Pause", 50.dp, onPlayPause)
+                PlayerIcon(if (playerState.isPlaying) R.drawable.pause else R.drawable.play, "Play/Pause", 50.dp, onPlayPause)
                 PlayerIcon(R.drawable.next, "Next", 34.dp, onNext)
-                PlayerIcon(if (isRepeatOn) R.drawable.shuffle else R.drawable.repeat, "Repeat", 28.dp){ onRepeatToggle(!isRepeatOn)}
+                PlayerIcon(if (playerState.isRepeatOn) R.drawable.shuffle else R.drawable.repeat, "Repeat", 28.dp){ onRepeatToggle(!playerState.isRepeatOn)}
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 ProgressBar(
-                    progress = progress,
-                    onDragStart = onDragStart,
-                    onDrag = onDrag,
+                    progress = playerState.progress,
                     onDragEnd = onDragEnd,
-                    duration = duration,
-                    songIndex = currentSongIndex
+                    duration = playerState.duration,
+                    songIndex = playerState.currentSongIndex
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -210,8 +185,8 @@ fun MiniPlayer(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(formatTime(currentPosition), color = Color.Black, fontFamily = AppData.myFont)
-                    Text(formatTime(duration), color = Color.Black, fontFamily = AppData.myFont)
+                    Text(formatTime(playerState.currentPosition), color = Color.Black, fontFamily = AppData.myFont)
+                    Text(formatTime(playerState.duration), color = Color.Black, fontFamily = AppData.myFont)
                 }
             }
         }
@@ -241,8 +216,6 @@ fun formatTime(
 @Composable
 fun ProgressBar(
     progress: Float,
-    onDragStart: () -> Unit,
-    onDrag: (Float) -> Unit,
     onDragEnd: (Int) -> Unit,
     duration: Int,
     songIndex: Int
@@ -264,22 +237,15 @@ fun ProgressBar(
             .pointerInput(songIndex) {
                 detectTapGestures { tap ->
                     val newProgress = (tap.x / barWidth).coerceIn(0f, 1f)
-                    onDragStart()
                     localProgress = newProgress
-                    onDrag(newProgress)
                     onDragEnd((newProgress * duration).toInt())
                 }
             }
             .pointerInput(songIndex) {
                 detectDragGestures(
-                    onDragStart = {
-                        onDragStart()
-                    },
                     onDrag = { change, _ ->
                         val x = change.position.x.coerceIn(0f, barWidth)
-                        val newProgress = (x / barWidth).coerceIn(0f, 1f)
-                        localProgress = newProgress
-                        onDrag(newProgress)
+                        localProgress = (x / barWidth).coerceIn(0f, 1f)
                     },
                     onDragEnd = {
                         val finalProgress = localProgress.coerceIn(0f, 1f)
