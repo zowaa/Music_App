@@ -31,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -168,7 +169,7 @@ fun MiniPlayer(
                 PlayerIcon(R.drawable.previous, "Previous", 34.dp, onPrevious)
                 PlayerIcon(if (playerState.isPlaying) R.drawable.pause else R.drawable.play, "Play/Pause", 50.dp, onPlayPause)
                 PlayerIcon(R.drawable.next, "Next", 34.dp, onNext)
-                PlayerIcon(if (playerState.isRepeatOn) R.drawable.shuffle else R.drawable.repeat, "Repeat", 28.dp){ onRepeatToggle(!playerState.isRepeatOn)}
+                PlayerIcon(if (playerState.isRepeatOn) R.drawable.repeaton else R.drawable.repeat, "Repeat", 28.dp){ onRepeatToggle(!playerState.isRepeatOn)}
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -199,7 +200,6 @@ fun PlayerIcon(resId: Int, description: String, size: Dp, onClick: () -> Unit) {
         painter = painterResource(id = resId),
         contentDescription = description,
         modifier = Modifier.size(size).clickable { onClick() },
-        tint = Color.Black
     )
 }
 
@@ -223,9 +223,10 @@ fun ProgressBar(
     var barWidth by remember { mutableFloatStateOf(0f) }
     var localProgress by remember { mutableFloatStateOf(progress) }
     val density = LocalDensity.current
+    var isDragging by remember { mutableStateOf(false) }
 
     LaunchedEffect(progress) {
-        localProgress = progress
+        if (!isDragging) localProgress = progress
     }
 
     Box(
@@ -243,11 +244,13 @@ fun ProgressBar(
             }
             .pointerInput(songIndex) {
                 detectDragGestures(
+                    onDragStart = { isDragging = true },
                     onDrag = { change, _ ->
                         val x = change.position.x.coerceIn(0f, barWidth)
                         localProgress = (x / barWidth).coerceIn(0f, 1f)
                     },
                     onDragEnd = {
+                        isDragging = false
                         val finalProgress = localProgress.coerceIn(0f, 1f)
                         onDragEnd((finalProgress * duration).toInt())
                     },
