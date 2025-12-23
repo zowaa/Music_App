@@ -5,12 +5,10 @@ import androidx.compose.ui.text.font.FontFamily
 
 object AppData {
     val myFont = FontFamily(Font(R.font.cairo))
-
-    val artistName: String = "الشابة شوشو"
-
-    val rateUs_link: String = "https://google.com"
-    val otherApps_link: String = "https://google.com"
-    val privacyPolicy_link: String = "https://google.com"
+    const val ARTIST_NAME: String = "الشابة شوشو"
+    const val RATE_US_LINK: String = "https://google.com"
+    const val OTHER_APPS_LINK: String = "https://google.com"
+    const val PRIVACY_POLICY_LINK: String = "https://google.com"
 
     val songsName: List<String> = listOf(
         "غنيلي",

@@ -26,8 +26,6 @@ class MusicViewModel( application: Application ) : AndroidViewModel(application)
     @Suppress("StaticFieldLeak")
     private var musicService: MusicService? = null
     private var isServiceBound = false
-    var isDragging = false
-
 
 
     private val connection = object : ServiceConnection {
@@ -51,23 +49,11 @@ class MusicViewModel( application: Application ) : AndroidViewModel(application)
         }
     }
 
-
     init {
         val intent = Intent(appContext, MusicService::class.java)
         appContext.startService(intent)
         appContext.bindService(intent, connection, Context.BIND_AUTO_CREATE)
     }
-
-    fun onStartDragging() {
-        isDragging = true
-        musicService?.startDragging()
-    }
-
-    fun onStopDragging() {
-        isDragging = false
-        musicService?.stopDragging()
-    }
-
 
     fun playSong(index: Int) {
         musicService?.playSong(index)
@@ -79,7 +65,6 @@ class MusicViewModel( application: Application ) : AndroidViewModel(application)
 
     fun nextSong() {
         musicService?.nextSong()
-
     }
 
     fun previousSong() {
@@ -90,12 +75,20 @@ class MusicViewModel( application: Application ) : AndroidViewModel(application)
         musicService?.toggleRepeat()
     }
 
+    fun onStartDragging() {
+        musicService?.startDragging()
+    }
+
+    fun onStopDragging() {
+        musicService?.stopDragging()
+    }
+
     fun seekTo(position: Int) {
         musicService?.seekTo(position)
     }
 
     fun setProgress(newProgress: Float) {
-            musicService?.setProgressValue(newProgress)
+        musicService?.setProgressValue(newProgress)
     }
 
     override fun onCleared() {
@@ -107,6 +100,4 @@ class MusicViewModel( application: Application ) : AndroidViewModel(application)
         musicService = null
         super.onCleared()
     }
-
-
 }

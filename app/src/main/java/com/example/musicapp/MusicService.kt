@@ -19,7 +19,6 @@ class MusicService : Service() {
     inner class LocalBinder : Binder() {
         fun getService(): MusicService = this@MusicService
     }
-
     private val binder = LocalBinder()
     private var mediaPlayer: MediaPlayer? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -34,42 +33,9 @@ class MusicService : Service() {
         fun onStateChanged(state: MusicPlayerState)
     }
 
-
     fun setCallback(cb: PlayerCallback?) {
         callback = cb
         notifyState()
-    }
-
-    private fun notifyState() {
-        val duration = mediaPlayer?.duration ?: 0
-        val position = if (isDragging && dragProgress != null) {
-            (dragProgress!! * duration).toInt()
-        } else {
-            mediaPlayer?.currentPosition ?: 0
-        }
-        val progress = if (duration > 0) position / duration.toFloat() else 0f
-
-        val state = MusicPlayerState(
-            currentSongIndex = currentIndex,
-            isPlaying = mediaPlayer?.isPlaying ?: false,
-            isRepeatOn = isRepeat,
-            progress = progress,
-            currentPosition = position,
-            duration = duration
-        )
-        callback?.onStateChanged(state)
-    }
-
-    private fun startProgressUpdates() {
-        if (progressJob?.isActive == true) return
-        progressJob = scope.launch {
-            while (isActive) {
-                if (mediaPlayer != null && !isDragging) {
-                    notifyState()
-                }
-                delay(200)
-            }
-        }
     }
 
     fun playerState(): MusicPlayerState {
@@ -85,6 +51,10 @@ class MusicService : Service() {
             currentPosition = position,
             duration = duration
         )
+    }
+
+    fun playSong(index: Int) {
+        prepareAndStart(index)
     }
 
     private fun prepareAndStart(index: Int) {
@@ -112,8 +82,36 @@ class MusicService : Service() {
         }
     }
 
-    fun playSong(index: Int) {
-        prepareAndStart(index)
+    private fun startProgressUpdates() {
+        if (progressJob?.isActive == true) return
+        progressJob = scope.launch {
+            while (isActive) {
+                if (mediaPlayer != null && !isDragging) {
+                    notifyState()
+                }
+                delay(200)
+            }
+        }
+    }
+
+    private fun notifyState() {
+        val duration = mediaPlayer?.duration ?: 0
+        val position = if (isDragging && dragProgress != null) {
+            (dragProgress!! * duration).toInt()
+        } else {
+            mediaPlayer?.currentPosition ?: 0
+        }
+        val progress = if (duration > 0) position / duration.toFloat() else 0f
+
+        val state = MusicPlayerState(
+            currentSongIndex = currentIndex,
+            isPlaying = mediaPlayer?.isPlaying ?: false,
+            isRepeatOn = isRepeat,
+            progress = progress,
+            currentPosition = position,
+            duration = duration
+        )
+        callback?.onStateChanged(state)
     }
 
     fun togglePlayPause() {
@@ -124,19 +122,26 @@ class MusicService : Service() {
     }
 
     fun nextSong() {
-        if (AppData.songsResId.isEmpty()) return
         val next = if (currentIndex < AppData.songsResId.size - 1) currentIndex + 1 else 0
         playSong(next)
     }
 
     fun previousSong() {
-        if (AppData.songsResId.isEmpty()) return
         val prev = if (currentIndex > 0) currentIndex - 1 else AppData.songsResId.size - 1
         playSong(prev)
     }
 
     fun toggleRepeat() {
         isRepeat = !isRepeat
+        notifyState()
+    }
+
+    fun startDragging() {
+        isDragging = true
+    }
+
+    fun stopDragging() {
+        isDragging = false
         notifyState()
     }
 
@@ -151,7 +156,6 @@ class MusicService : Service() {
         notifyState()
     }
 
-
     override fun onBind(intent: Intent?): IBinder {
         return binder
     }
@@ -159,16 +163,6 @@ class MusicService : Service() {
     override fun onUnbind(intent: Intent?): Boolean {
         return true
     }
-
-    fun startDragging() {
-        isDragging = true
-    }
-
-    fun stopDragging() {
-        isDragging = false
-        notifyState()
-    }
-
 
     override fun onDestroy() {
         progressJob?.cancel()

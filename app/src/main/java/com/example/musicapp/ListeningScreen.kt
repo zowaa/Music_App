@@ -86,11 +86,11 @@ fun ListeningScreen(
                 MiniPlayer(
                     isPlaying = isPlaying,
                     onPlayPause = { viewModel.togglePlayPause() },
-                    onNext = {viewModel.nextSong()},
-                    onPrevious = {viewModel.previousSong()},
+                    onNext = { viewModel.nextSong() },
+                    onPrevious = { viewModel.previousSong() },
                     currentSongIndex = currentSongIndex,
                     isRepeatOn = isRepeatOn,
-                    onRepeatToggle = {viewModel.toggleRepeat()},
+                    onRepeatToggle = { viewModel.toggleRepeat() },
                     progress = progress,
                     currentPosition = currentPosition,
                     duration = duration,
@@ -100,7 +100,6 @@ fun ListeningScreen(
                         viewModel.seekTo(pos)
                     },
                     onDrag = { viewModel.setProgress(it) }
-
                 )
             }
         }
@@ -139,9 +138,7 @@ fun SongsList(
                         else Color.White.copy(alpha = 0.8f)
                     )
                     .padding(12.dp)
-                    .clickable {
-                        playSong(index)
-                    }
+                    .clickable { playSong(index) }
             ) {
                 Text(
                     text = song,
@@ -153,17 +150,6 @@ fun SongsList(
         }
     }
 }
-
-@Composable
-fun PlayerIcon(resId: Int, description: String, size: Dp, onClick: () -> Unit) {
-    Icon(
-        painter = painterResource(id = resId),
-        contentDescription = description,
-        modifier = Modifier.size(size).clickable { onClick() },
-        tint = Color.Black
-    )
-}
-
 
 @Composable
 fun MiniPlayer(
@@ -196,7 +182,6 @@ fun MiniPlayer(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-
             Row(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically,
@@ -206,7 +191,7 @@ fun MiniPlayer(
                 PlayerIcon(R.drawable.previous, "Previous", 34.dp, onPrevious)
                 PlayerIcon(if (isPlaying) R.drawable.pause else R.drawable.play, "Play/Pause", 50.dp, onPlayPause)
                 PlayerIcon(R.drawable.next, "Next", 34.dp, onNext)
-                PlayerIcon(if (isRepeatOn) R.drawable.repeaton else R.drawable.repeat, "Repeat", 28.dp){ onRepeatToggle(!isRepeatOn)}
+                PlayerIcon(if (isRepeatOn) R.drawable.shuffle else R.drawable.repeat, "Repeat", 28.dp){ onRepeatToggle(!isRepeatOn)}
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -218,6 +203,7 @@ fun MiniPlayer(
                     duration = duration,
                     songIndex = currentSongIndex
                 )
+
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Row(
@@ -231,6 +217,17 @@ fun MiniPlayer(
         }
     }
 }
+
+@Composable
+fun PlayerIcon(resId: Int, description: String, size: Dp, onClick: () -> Unit) {
+    Icon(
+        painter = painterResource(id = resId),
+        contentDescription = description,
+        modifier = Modifier.size(size).clickable { onClick() },
+        tint = Color.Black
+    )
+}
+
 
 fun formatTime(
     ms: Int
@@ -251,9 +248,8 @@ fun ProgressBar(
     songIndex: Int
 ) {
     var barWidth by remember { mutableFloatStateOf(0f) }
-    val density = LocalDensity.current
-
     var localProgress by remember { mutableFloatStateOf(progress) }
+    val density = LocalDensity.current
 
     LaunchedEffect(progress) {
         localProgress = progress

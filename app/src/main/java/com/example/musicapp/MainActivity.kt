@@ -80,7 +80,6 @@ fun Home(navController: NavController) {
                 .padding(top = 120.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             Image(
                 painter = painterResource(id = R.drawable.artist),
                 contentDescription = "Artist Image",
@@ -94,14 +93,13 @@ fun Home(navController: NavController) {
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = AppData.artistName,
+                text = AppData.ARTIST_NAME,
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = AppData.myFont,
                 color = Color.White
             )
         }
-
 
         Column(
             modifier = Modifier
@@ -111,9 +109,7 @@ fun Home(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Button(
-                onClick = {
-                    navController.navigate("listening")
-                },
+                onClick = { navController.navigate("listening") },
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White.copy(alpha = 0.9f),
@@ -143,7 +139,7 @@ fun Home(navController: NavController) {
                         color = Color.White,
                         fontFamily = AppData.myFont,
                         modifier = Modifier.clickable {
-                            val intent = Intent(Intent.ACTION_VIEW, AppData.rateUs_link.toUri())
+                            val intent = Intent(Intent.ACTION_VIEW, AppData.RATE_US_LINK.toUri())
                             context.startActivity(intent)
                         }
                             .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -162,7 +158,7 @@ fun Home(navController: NavController) {
                         color = Color.White,
                         fontFamily = AppData.myFont,
                         modifier = Modifier.clickable {
-                            val intent = Intent(Intent.ACTION_VIEW, AppData.otherApps_link.toUri())
+                            val intent = Intent(Intent.ACTION_VIEW, AppData.OTHER_APPS_LINK.toUri())
                             context.startActivity(intent)
                         }
                             .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -181,7 +177,7 @@ fun Home(navController: NavController) {
                         color = Color.White,
                         fontFamily = AppData.myFont,
                         modifier = Modifier.clickable {
-                            val intent = Intent(Intent.ACTION_VIEW, AppData.privacyPolicy_link.toUri())
+                            val intent = Intent(Intent.ACTION_VIEW, AppData.PRIVACY_POLICY_LINK.toUri())
                             context.startActivity(intent)
                         }
                             .padding(horizontal = 8.dp, vertical = 4.dp)
