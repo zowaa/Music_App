@@ -104,7 +104,11 @@ class MusicRepository (
 
 
     fun togglePlayPause() {
-        musicService?.togglePlayPause()
+        if (isPlaying) {
+            musicService?.pause()
+        } else {
+            musicService?.play()
+        }
     }
 
     fun seekTo(positionMs: Int) {

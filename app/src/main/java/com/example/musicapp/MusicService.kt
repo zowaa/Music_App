@@ -51,8 +51,10 @@ class MusicService : Service() {
             mediaPlayer?.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
             afd.close()
 
-            mediaPlayer?.prepare()
-            mediaPlayer?.start()
+            mediaPlayer?.prepareAsync()
+            mediaPlayer?.setOnPreparedListener {
+                it.start()
+            }
 
             startProgressUpdates()
 
@@ -83,8 +85,12 @@ class MusicService : Service() {
         }
     }
 
-    fun togglePlayPause() {
-        mediaPlayer?.let { if (it.isPlaying) it.pause() else it.start() }
+    fun play() {
+        mediaPlayer?.start()
+    }
+
+    fun pause() {
+        mediaPlayer?.pause()
     }
 
     fun seekTo(positionMs: Int) {
