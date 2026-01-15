@@ -24,6 +24,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,7 +42,6 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,6 +63,15 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Home(navController: NavController) {
     val context = LocalContext.current
+    val openLink = remember(context) {
+        { url: String ->
+            runCatching {
+                context.startActivity(
+                    Intent(Intent.ACTION_VIEW, url.toUri())
+                )
+            }
+        }
+    }
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -109,7 +118,9 @@ fun Home(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Button(
-                onClick = { navController.navigate("listening") },
+                onClick = {
+                    navController.navigate("listening") { launchSingleTop = true }
+                },
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White.copy(alpha = 0.9f),
@@ -133,57 +144,44 @@ fun Home(navController: NavController) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(
-                        text = "⭐ قيمنا",
-                        fontSize = 15.sp,
-                        color = Color.White,
-                        fontFamily = AppData.myFont,
-                        modifier = Modifier.clickable {
-                            val intent = Intent(Intent.ACTION_VIEW, AppData.RATE_US_LINK.toUri())
-                            context.startActivity(intent)
-                        }
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                    FooterLink("⭐ قيمنا", onClick = { openLink(AppData.RATE_US_LINK) })
 
-                    Text(
-                        text = "|",
-                        fontSize = 15.sp,
-                        color = Color.White,
-                        fontFamily = AppData.myFont
-                    )
+                    Separator()
 
-                    Text(
-                        text = "📱 تطبيقات أخرى",
-                        fontSize = 15.sp,
-                        color = Color.White,
-                        fontFamily = AppData.myFont,
-                        modifier = Modifier.clickable {
-                            val intent = Intent(Intent.ACTION_VIEW, AppData.OTHER_APPS_LINK.toUri())
-                            context.startActivity(intent)
-                        }
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                    FooterLink("📱 تطبيقات أخرى", onClick = { openLink(AppData.OTHER_APPS_LINK) })
 
-                    Text(
-                        text = "|",
-                        fontSize = 15.sp,
-                        color = Color.White,
-                        fontFamily = AppData.myFont
-                    )
+                    Separator()
 
-                    Text(
-                        text = "🔐 سياسة الخصوصية",
-                        fontSize = 15.sp,
-                        color = Color.White,
-                        fontFamily = AppData.myFont,
-                        modifier = Modifier.clickable {
-                            val intent = Intent(Intent.ACTION_VIEW, AppData.PRIVACY_POLICY_LINK.toUri())
-                            context.startActivity(intent)
-                        }
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                    FooterLink("🔐 سياسة الخصوصية", onClick= { openLink(AppData.PRIVACY_POLICY_LINK) })
                 }
             }
         }
     }
 }
+
+@Composable
+private fun FooterLink(
+    text: String,
+    onClick: () -> Unit
+) {
+    Text(
+        text = text,
+        fontSize = 15.sp,
+        color = Color.White,
+        fontFamily = AppData.myFont,
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+    )
+}
+
+@Composable
+private fun Separator() {
+    Text(
+        text = "|",
+        fontSize = 15.sp,
+        color = Color.White,
+        fontFamily = AppData.myFont
+    )
+}
+
