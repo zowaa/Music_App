@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.LaunchedEffect
@@ -107,8 +108,10 @@ fun SongsList(
         verticalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(12.dp)
     ) {
-        items(AppData.songsName.indices.toList()) { index ->
-            val song = AppData.songsName[index]
+        itemsIndexed(
+            items = AppData.songsName,
+            key = { index, _ -> index }
+        ) { index, song ->
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
