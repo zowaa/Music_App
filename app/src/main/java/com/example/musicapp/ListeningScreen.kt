@@ -4,8 +4,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +25,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -239,25 +239,19 @@ fun ProgressBar(
             .padding(horizontal = 8.dp)
             .onGloballyPositioned { barWidth = it.size.width.toFloat() }
             .pointerInput(songIndex) {
-                detectTapGestures { tap ->
-                    val newProgress = (tap.x / barWidth).coerceIn(0f, 1f)
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    isDragging = true
+                    val newProgress = (down.position.x / barWidth).coerceIn(0f, 1f)
                     localProgress = newProgress
-                    onDragEnd((newProgress * duration).toInt())
-                }
-            }
-            .pointerInput(songIndex) {
-                detectDragGestures(
-                    onDragStart = { isDragging = true },
-                    onDrag = { change, _ ->
+                    drag(down.id) { change ->
                         val x = change.position.x.coerceIn(0f, barWidth)
                         localProgress = (x / barWidth).coerceIn(0f, 1f)
-                    },
-                    onDragEnd = {
-                        isDragging = false
-                        val finalProgress = localProgress.coerceIn(0f, 1f)
-                        onDragEnd((finalProgress * duration).toInt())
-                    },
-                )
+                        change.consume()
+                    }
+                    isDragging = false
+                    onDragEnd((localProgress * duration).toInt())
+                }
             },
         contentAlignment = Alignment.CenterStart
     ) {
