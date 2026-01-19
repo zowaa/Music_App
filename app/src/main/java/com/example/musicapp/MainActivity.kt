@@ -1,7 +1,9 @@
 package com.example.musicapp
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -35,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.net.toUri
@@ -48,11 +51,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val navController = rememberNavController()
-            NavHost(navController = navController, startDestination = "home") {
-                composable("home") {
+            NavHost(navController = navController, startDestination = Screen.Home.route) {
+                composable(Screen.Home.route) {
                     Home(navController)
                 }
-                composable("listening") {
+                composable(Screen.Listening.route) {
                     ListeningScreen()
                 }
             }
@@ -63,22 +66,27 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Home(navController: NavController) {
     val context = LocalContext.current
+
     val openLink = remember(context) {
         { url: String ->
-            runCatching {
+            try {
                 context.startActivity(
                     Intent(Intent.ACTION_VIEW, url.toUri())
                 )
+            } catch (_: ActivityNotFoundException) {
+                Toast.makeText(context,R.string.open_link_error, Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
+
 
     Box(
         modifier = Modifier.fillMaxSize()
     ){
         Image(
             painter = painterResource(id = R.drawable.bg),
-            contentDescription = "Background Image",
+            contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
@@ -119,7 +127,7 @@ fun Home(navController: NavController) {
         ) {
             Button(
                 onClick = {
-                    navController.navigate("listening") { launchSingleTop = true }
+                    navController.navigate(Screen.Listening.route) { launchSingleTop = true }
                 },
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -131,7 +139,7 @@ fun Home(navController: NavController) {
                     .height(66.dp)
             ) {
                 Text(
-                    text = "ابدأ الاستماع",
+                    text = stringResource(R.string.start_listening),
                     fontSize = 25.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = AppData.myFont
@@ -144,15 +152,15 @@ fun Home(navController: NavController) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    FooterLink("⭐ قيمنا", onClick = { openLink(AppData.RATE_US_LINK) })
+                    FooterLink(stringResource(R.string.rate_us), onClick = { openLink(AppData.RATE_US_LINK) })
 
                     Separator()
 
-                    FooterLink("📱 تطبيقات أخرى", onClick = { openLink(AppData.OTHER_APPS_LINK) })
+                    FooterLink(stringResource(R.string.other_apps), onClick = { openLink(AppData.OTHER_APPS_LINK) })
 
                     Separator()
 
-                    FooterLink("🔐 سياسة الخصوصية", onClick= { openLink(AppData.PRIVACY_POLICY_LINK) })
+                    FooterLink(stringResource(R.string.privacy_policy), onClick= { openLink(AppData.PRIVACY_POLICY_LINK) })
                 }
             }
         }

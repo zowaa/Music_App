@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">MusicApp</string>
+    <string name="start_listening">ابدأ الاستماع</string>
+    <string name="open_link_error">تعذر العثور على تطبيق لفتح هذا الرابط</string>
+    <string name="rate_us">⭐ قيمنا</string>
+    <string name="other_apps">📱 تطبيقات أخرى</string>
+    <string name="privacy_policy">🔐 سياسة الخصوصية</string>
+
 </resources>

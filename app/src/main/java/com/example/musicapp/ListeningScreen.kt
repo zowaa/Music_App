@@ -44,6 +44,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 
@@ -51,7 +52,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun ListeningScreen(
     viewModel: MusicViewModel = viewModel()
 ) {
-    val playerState by viewModel.playerState.collectAsState()
+    val playerState by viewModel.playerState.collectAsStateWithLifecycle()
+
 
 
     Box(
@@ -145,7 +147,7 @@ fun MiniPlayer(
     onPlayPause: () -> Unit,
     onNext : () -> Unit,
     onPrevious : () -> Unit,
-    onRepeatToggle: (Boolean) -> Unit,
+    onRepeatToggle: () -> Unit,
     onDragEnd: (Int) -> Unit,
 ) {
     Box(
@@ -172,7 +174,7 @@ fun MiniPlayer(
                 PlayerIcon(R.drawable.previous, "Previous", 34.dp, onPrevious)
                 PlayerIcon(if (playerState.isPlaying) R.drawable.pause else R.drawable.play, "Play/Pause", 50.dp, onPlayPause)
                 PlayerIcon(R.drawable.next, "Next", 34.dp, onNext)
-                PlayerIcon(if (playerState.isRepeatOn) R.drawable.repeaton else R.drawable.repeat, "Repeat", 28.dp){ onRepeatToggle(!playerState.isRepeatOn)}
+                PlayerIcon(if (playerState.isRepeatOn) R.drawable.repeaton else R.drawable.repeat, "Repeat", 28.dp, onRepeatToggle)
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
